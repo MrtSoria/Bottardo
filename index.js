@@ -1,7 +1,7 @@
 require('dotenv').config();
 const fs = require('fs');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
-const { Player } = require('discord-player');
+const { Player, useMainPlayer } = require('discord-player');
 const { YoutubeiExtractor } = require('discord-player-youtubei');
 
 const client = new Client({
@@ -16,6 +16,16 @@ client.commands = new Collection();
 
 //Creacion del reproductor
 const player = new Player(client);
+
+//Manejo de errores del player
+player.events.on('error', (queue, error) => {
+    console.error(`[Error de la cola]: ${error.message}`);
+})
+
+//Manejo de errores del player
+player.events.on('playerError', (queue, error) => {
+    console.error(`[Error del reproductor]: ${error.message}`);
+})
 
 //Creacion del extractor
 player.extractors.register(YoutubeiExtractor, {});
