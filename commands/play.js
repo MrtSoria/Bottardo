@@ -8,7 +8,7 @@ module.exports = {
         .addStringOption(option =>
             option.setName('search')
                 .setDescription('URL o nombre de la canción.')
-                .setRequired(true)
+                .setRequired(false)
         ),
 
     async run(interaction) {
@@ -18,13 +18,23 @@ module.exports = {
         if (!channel)
             return interaction.reply({ content: 'Debes estar en un canal de voz para usar este comando.', ephemeral: true });
 
-        const query = interaction.options.getString('search', true);
+        const query = interaction.options.getString('search');
 
         await interaction.deferReply();
 
         try {
             let queue = player.nodes.get(interaction.guild);
 
+            // Si no hay query, reanudar la canción pausada
+            if (!query) {
+                if (queue && queue.node.isPaused()) {
+                    queue.node.resume();
+                    return interaction.followUp('Reanudando reproducción.');
+                }
+                return interaction.followUp('No hay ninguna cancion pausada.');
+            }
+
+            // Si no hay cola, crear una nueva
             if (!queue) {
                 queue = player.nodes.create(interaction.guild, {
                     metadata: interaction,
@@ -36,8 +46,10 @@ module.exports = {
                 });
             }
 
+            // Conectar al canal de voz
             if (!queue.connection) await queue.connect(channel);
 
+            // Reproducir la canción
             const { track } = await player.play(channel, query, {
                 nodeOptions: {
                     metadata: interaction,
